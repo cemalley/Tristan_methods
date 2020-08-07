@@ -56,7 +56,7 @@ reformat_for_seurat <- function(x, samplename){
   x@meta.data$sample <- samplename
   x <- NormalizeData(x)
   x <- FindVariableFeatures(x)
-  x <- ScaleData(x)
+  x <- ScaleData(x, features.use=c(as.data.frame(as.matrix(x@assays$RNA@data))))
   x <- RunPCA(x)
   x <- FindNeighbors(x)
   x <- FindClusters(x)
@@ -91,6 +91,8 @@ DimPlot(object = is018, reduction = "umap")
 
 save(is018, file='../IS018.neurons.RData')
 load('/Volumes/ncatssctl/NGS_related/Chromium/IS018/IS018.neurons.RData')
+
+
 # markers for each cluster----
 
 TSNEPlot(is018, label=T)
@@ -696,8 +698,7 @@ DoHeatmap(is018.grouped, features = c(uniqued[category=='Neural crest',gene]) , 
 
 TSNEPlot(is018.grouped)
 
-#is018.grouped.cluster1 <- SubsetData(is018.grouped, ident.use = '1')
-is018.grouped.cluster1 <- subset(is018.grouped, idents = c(1))
+is018.grouped.cluster1 <- SubsetData(is018.grouped, ident.use = '1')
 is018.grouped.cluster1@meta.data
 
 lower.cortical.genes <- intersect(c('SNAP25', 'GRIA2', 'CNTNAP2', 'CELF4', 'NSG2', 'SYT1', 'YWHAH', 'SNCA', 'BASP1', 'DOK6', 'RTN1', 'RUNX1T1', 'FAM49A', 'MAP1B', 'SYT4', 'B3GALT2', 'GABRB2', 'LMO3', 'SCG3', 'UCHL1', 'VAMP2', 'TMEM161B-AS1', 'LY6H', 'MAPT', 'CDKN2D', 'RAB3A'), row.names(is018.grouped.cluster1@assays$RNA@data))
@@ -757,7 +758,7 @@ VlnPlot(is018.grouped, features = 'SOX11')
 
 progenitor.genes <- unique(intersect(c('ANXA2', 'GYPC', 'SPARC', 'SDC2', 'CRABP2', 'NTRK2', 'CCND1', 'LGALS1', 'SERF2', 'MDK', 'VGLL3', 'S100A13', 'PDLIM7', 'ANXA5', 'PRSS23', 'RPL41', 'NPC2', 'SEC11A', 'PRDX6', 'TPM1', 'RHOC', 'NEAT1', 'RPL12', 'RPL7A', 'EEF1A1', 'RPL28', 'RPS6', 'RPL23A', 'TIMP1', 'RPL8', 'METRN', 'WLS', 'RPL27A', 'CTGF', 'RCN1', 'PFN1', 'PMP22', 'ITGB8', 'SERPINH1', 'VIM', 'NME4', 'RPS7', 'MYL12A', 'RPS20', 'RPS2', 'RPLP1', 'RAB13', 'TUBB6', 'CRNDE', 'TTYH1', 'RPL23', 'RPS19', 'RPL29', 'RPS14', 'RPL3', 'SLC25A6', 'SPATS2L', 'QPRT', 'RPL35', 'RPS18', 'CLIC1', 'RPS3', 'RPL10A', 'RPS28', 'CD63', 'PDPN', 'ACTG1', 'CCNG1', 'CD99', 'B2M', 'CHCHD10', 'RPLP0', 'RPS27L', 'COL1A2', 'PFN2', 'UBB', 'RPL37', 'CRABP1', 'RPL7', 'FSTL1', 'RPL36', 'RPL19', 'FGFR1', 'ENO1', 'RPS15', 'MYL6', 'GSTP1', 'PODXL', 'CNN3', 'GNG11', 'RPS4Y1', 'AHNAK', 'CST3', 'RPS23', 'RPL13A'), row.names(is018.grouped.cluster1@assays$RNA@data)))
 
-progenitor.avgs <- AverageExpression(is018.grouped.cluster1, features = c(progenitor.genes))
+progenitor.avgs <- AverageExpression(is018.grouped.cluster1, features = progenitor.genes)
 progenitor.avgs.sums <- colSums(progenitor.avgs$RNA)
 
 str(is018.grouped@reductions$tsne)
@@ -787,16 +788,16 @@ tsne.blend[,cortical:=colMeans(is018.grouped.data[GeneId %in% cortical.genes,-c(
 tsne.blend[,progenitor:=colMeans(is018.grouped.data[GeneId %in% progenitor.genes,-c('GeneId')])]
 tsne.blend[,other:=colMeans(is018.grouped.data[GeneId %in% uniqued[category=='Other',gene],-c('GeneId')])]
 
-ggplot(data=tsne.blend, aes(x=tSNE_1, y=tSNE_2, color=glia)) + geom_point(size=2) + theme_bw() + scale_color_gradient(low="lightgrey", high= "darkred")
+ggplot(data=tsne.blend, aes(x=tSNE_1, y=tSNE_2, color=glia)) + geom_point() + theme_bw()
 
 Idents(is018.grouped) <- 'new_clusters'
 DimPlot(is018.grouped, label=TRUE, label.size = 10)
 
-ggplot(data=tsne.blend, aes(x=tSNE_1, y=tSNE_2, color=lower_cortical)) + geom_point(size=2) + theme_bw() + scale_color_gradient(low="lightgrey", high= "darkred")
-ggplot(data=tsne.blend, aes(x=tSNE_1, y=tSNE_2, color=upper_cortical)) + geom_point(size=2) + theme_bw() + scale_color_gradient(low="lightgrey", high= "darkred")
-ggplot(data=tsne.blend, aes(x=tSNE_1, y=tSNE_2, color=cortical)) + geom_point(size=2) + theme_bw() + scale_color_gradient(low="lightgrey", high= "darkred")
-ggplot(data=tsne.blend, aes(x=tSNE_1, y=tSNE_2, color=progenitor)) + geom_point(size=2) + theme_bw() + scale_color_gradient(low="lightgrey", high= "darkred")
-ggplot(data=tsne.blend, aes(x=tSNE_1, y=tSNE_2, color=other)) + geom_point(size=2) + theme_bw() + scale_color_gradient(low="lightgrey", high= "darkred")
+ggplot(data=tsne.blend, aes(x=tSNE_1, y=tSNE_2, color=lower_cortical)) + geom_point() + theme_bw()
+ggplot(data=tsne.blend, aes(x=tSNE_1, y=tSNE_2, color=upper_cortical)) + geom_point() + theme_bw()
+ggplot(data=tsne.blend, aes(x=tSNE_1, y=tSNE_2, color=cortical)) + geom_point() + theme_bw()
+ggplot(data=tsne.blend, aes(x=tSNE_1, y=tSNE_2, color=progenitor)) + geom_point() + theme_bw()
+ggplot(data=tsne.blend, aes(x=tSNE_1, y=tSNE_2, color=other)) + geom_point() + theme_bw()
 
 VlnPlot(is018.grouped, features = c('SLC1A3','GRIA2','BCL11B','SATB2','CRABP1','NEUROD2','NES','PAX6','SOX2','FOXG1'), pt.size = 0)
 
@@ -806,28 +807,325 @@ cluster3.DE <- FindMarkers(is018.grouped, ident.1 = '3')
 cluster4.DE <- FindMarkers(is018.grouped, ident.1 = '4')
 cluster5.DE <- FindMarkers(is018.grouped, ident.1 = '5')
 
+cluster1.DE$gene <- row.names(cluster1.DE)
+cluster2.DE$gene <- row.names(cluster2.DE)
+cluster3.DE$gene <- row.names(cluster3.DE)
+cluster4.DE$gene <- row.names(cluster4.DE)
+cluster5.DE$gene <- row.names(cluster5.DE)
+
 Idents(is018.grouped) <- 'new_clusters'
 
-DoHeatmap(is018.grouped, features = unique(c(row.names(cluster1.DE)[1:10], row.names(cluster2.DE)[1:10], row.names(cluster3.DE)[1:10], row.names(cluster4.DE)[1:10], row.names(cluster5.DE)[1:10] )) , raster=F) + labs(title='IS018 neurons: top DE genes by cluster')
+fwrite(cluster1.DE, '/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/Neuron_subpops/Scaling_all_genes_and_CC/after_regrouping/Glia_neuron_categories/IS018.grouped.cluster1.DE.csv')
+fwrite(cluster2.DE, '/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/Neuron_subpops/Scaling_all_genes_and_CC/after_regrouping/Glia_neuron_categories/IS018.grouped.cluster2.DE.csv')
+fwrite(cluster3.DE, '/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/Neuron_subpops/Scaling_all_genes_and_CC/after_regrouping/Glia_neuron_categories/IS018.grouped.cluster3.DE.csv')
+fwrite(cluster4.DE, '/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/Neuron_subpops/Scaling_all_genes_and_CC/after_regrouping/Glia_neuron_categories/IS018.grouped.cluster4.DE.csv')
+fwrite(cluster5.DE, '/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/Neuron_subpops/Scaling_all_genes_and_CC/after_regrouping/Glia_neuron_categories/IS018.grouped.cluster5.DE.csv')
 
+cluster1.DE.sub <- subset(cluster1.DE, abs(cluster1.DE$avg_logFC) > 1)
+cluster2.DE.sub <- subset(cluster2.DE, abs(cluster2.DE$avg_logFC) > 1)
+cluster3.DE.sub <- subset(cluster3.DE, abs(cluster3.DE$avg_logFC) > 1)
+cluster4.DE.sub <- subset(cluster4.DE, abs(cluster4.DE$avg_logFC) > 1)
+cluster5.DE.sub <- subset(cluster5.DE, abs(cluster5.DE$avg_logFC) > 1)
 
-# april 23, heatmap and dotplot updates.-----
+cluster1.DE.sub$gene <- row.names(cluster1.DE.sub)
+cluster2.DE.sub$gene <- row.names(cluster2.DE.sub)
+cluster3.DE.sub$gene <- row.names(cluster3.DE.sub)
+cluster4.DE.sub$gene <- row.names(cluster4.DE.sub)
+cluster5.DE.sub$gene <- row.names(cluster5.DE.sub)
 
-#heatmap first.
-setwd('/Volumes/ncatssctl/NGS_related/Chromium/IS018/')
-load('/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/IS018.grouped.allScaled.Seurat.RData')
-#genelist <-c('BARHL2', 'MAB21L1', 'ENC1', 'MAPT', 'LHX9', 'SST', 'GAD2', 'DLX1', 'DLX2', 'DLX5', 'ID3', 'FABP7', 'VIM', 'PCLAF', 'SOX2', 'SPARC', 'MYL9', 'SPATS2L', 'TPBG', 'SAT1', 'ANXA2', 'EIF5', 'AEN', 'PTGR1', 'TNFRSF12A')
+cluster1.DE.sub <- as.data.table(cluster1.DE.sub)
+cluster1.DE.sub <- cluster1.DE.sub[order(-avg_logFC)]
 
-# april 28.
-genelist <- as.data.table(readxl::read_xlsx('/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/Neuron_subpops/Scaling_all_genes_and_CC/after_regrouping/Glia_neuron_categories/IS018_topDE_genelist.xlsx'))
-genelist <- genelist$GeneID
-is018.grouped@meta.data$new_clusters_reorder <- factor(is018.grouped@meta.data$new_clusters, levels=c(1:5))
-Idents(is018.grouped) <- 'new_clusters_reorder'
+cluster2.DE.sub <- as.data.table(cluster2.DE.sub)
+cluster2.DE.sub <- cluster2.DE.sub[order(-avg_logFC)]
 
-DoHeatmap(is018.grouped, features = c(genelist),
-          raster=F, angle=0, hjust=0.5, size = 5) + 
+cluster3.DE.sub <- as.data.table(cluster3.DE.sub)
+cluster3.DE.sub <- cluster3.DE.sub[order(-avg_logFC)]
+
+cluster4.DE.sub <- as.data.table(cluster4.DE.sub)
+cluster4.DE.sub <- cluster4.DE.sub[order(-avg_logFC)]
+
+cluster5.DE.sub <- as.data.table(cluster5.DE.sub)
+cluster5.DE.sub <- cluster5.DE.sub[order(-avg_logFC)]
+
+is018.grouped@meta.data$new_clusters_refactored <- factor(is018.grouped@meta.data$new_clusters, levels=c(1,2,3,4,5))
+Idents(is018.grouped) <- 'new_clusters_refactored'
+save(is018.grouped, '/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/IS018.grouped.allScaled.Seurat.RData')
+
+DoHeatmap(is018.grouped, features = unique(c(cluster1.DE.sub$gene[1:5], cluster2.DE.sub$gene[1:5], cluster3.DE.sub$gene[1:5], cluster4.DE.sub$gene[1:5], cluster5.DE.sub$gene[1:5] )) , raster=F) + labs(title='IS018 neurons: top DE genes by cluster') + 
   scale_fill_gradientn(colors = rev(RColorBrewer::brewer.pal(n = 10, name = "RdBu")) ) + 
-  guides(color=FALSE)+ theme(text = element_text(size=15))
+  guides(color=FALSE)
+
+
+all.markers <- FindAllMarkers(is018.grouped, logfc.threshold = 1)
+fwrite(all.markers, '/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/Neuron_subpops/Scaling_all_genes_and_CC/after_regrouping/Glia_neuron_categories/IS018.grouped.allmarkers.DE.csv')
+
+all.markers.logFC2 <- subset(all.markers, abs(all.markers$avg_logFC) > 2)
+all.markers.logFC2
+
+
+# 12/10/19: find genes expressed in a subpopulation of IS018 cells.----
+# these are unbiased clusters 1 and 2.
+
+load('/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/Neuron_subpops/Scaling_all_genes_and_CC/after_regrouping/Glia_neuron_categories/tSNEs.RData')
+
+tsne.blend
+
+load('/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/IS018.grouped.allScaled.Seurat.RData')
+is018.grouped <- UpdateSeuratObject(is018.grouped)
+
+is018.grouped@meta.data
+
+is018.1_2.cells <- subset(is018.grouped@meta.data, is018.grouped@meta.data$new_clusters == 1 | is018.grouped@meta.data$new_clusters == 2)
+is018.1_2.cells
+
+is018.raw <- as.data.frame(as.matrix(is018.grouped@assays$RNA@counts))
+is018.raw <- subset(is018.raw, select=c(row.names(is018.1_2.cells)))
+is018.raw
+
+all(names(is018.raw) == row.names(is018.1_2.cells))
+
+is018.1_2 <- CreateSeuratObject(counts=is018.raw, project='IS018', assay='RNA')
+
+finish_seurat <- function(x){
+  x <- NormalizeData(x)
+  x <- FindVariableFeatures(x)
+  x <- ScaleData(x, features=c(row.names(as.data.frame(as.matrix(x@assays$RNA@data)))))
+  x <- RunPCA(x)
+  x <- FindNeighbors(x)
+  x <- FindClusters(x)
+  x <- RunTSNE(x)
+  x <- RunUMAP(x, reduction='pca', dims=1:20, verbose = F)
+  return(x)
+}
+
+
+is018.1_2 <- finish_seurat(is018.1_2) 
+is018.1_2@meta.data
+TSNEPlot(is018.1_2)
+
+is018.1_2 <- FindClusters(is018.1_2, resolution = 0.2)
+
+cortex.genes <- unique(c('RELN', 'RASGRF2', 'RORB', 'PCP4', 'BCL11B', 'FOXP2', 'ABAT', 'CNR1', 'CALB1', 'NECAB1', 'TLE4', 'SLC17A6', 'CHRNA7', 'CUX1', 'CACNG5', 'TRIB2', 'KCNK2', 'CCN2', 'FOXO4', 'NDNF', 'IGSF11', 'CHRNA3', 'CPNE7', 'PCP4', 'CDH2', 'GFAP', 'INPP4B', 'KCNIP2', 'GRIK4', 'ETV1', 'PDE1A', 'CCN1', 'MAP2', 'CXCL14', 'NECTIN3', 'KCNIP1', 'FAM3C', 'RPRM', 'NTNG2', 'TUBB3', 'SYT17', 'PDYN', 'TOX', 'RXFP1', 'SYT10', 'TH', 'WFS1', 'VAT1L', 'GABRA5', 'SYT6', 'TBR1', 'C1QL2', 'TRMT9B', 'KCNA1', 'TH', 'LAMP5', 'HTR2C', 'TMEM163', 'CARTPT', 'AKR1C2', 'CCK', 'AKR1C3', 'FXYD6', 'ANXA1', 'PENK', 'NPY2R', 'CACNA1E', 'OPRK1', 'KCNH4', 'PCDH17', 'SCN3B', 'SEMA3C', 'COL24A1', 'SYNPR', 'CRYM', 'ADRA2A', 'TPBG', 'BEND5', 'NR4A2', 'COL6A1', 'PRSS12', 'SCN4B', 'SYT2', 'LGALS1', 'MFGE8', 'SV2C', 'SNCG'))
+
+Idents(is018.1_2) <- 'RNA_snn_res.0.1'
+
+is018.1_2.markers <- FindAllMarkers(is018.1_2, features=c(cortex.genes))
+View(is018.1_2.markers)
+fwrite(is018.1_2.markers, '/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/Neuron_subpops/Cortical_genes_DE_clusters1-2.csv')
+save(is018.1_2, file='/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/IS018.clusters1-2.RData')
+
+load('/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/IS018.clusters1-2.RData')
+
+is018.1_2.markers <- fread('/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/Neuron_subpops/Cortical_genes_DE_clusters1-2.csv')
+
+DoHeatmap(is018.grouped, features = c(cortex.genes), raster=F) + 
+  scale_fill_gradientn(colors = rev(RColorBrewer::brewer.pal(n = 10, name = "RdBu")) ) + 
+  guides(color=FALSE)
+
+
+DoHeatmap(is018.grouped, features = c('SOX11', 'NEUROD2', 'SOX2', 'GPM6A', 'SOX4', 'MLLT11', 'CCNI', 'SLA', 'MARCKSL1', 'DCX', 'NES'), raster=F) + 
+  scale_fill_gradientn(colors = rev(RColorBrewer::brewer.pal(n = 10, name = "RdBu")) ) + 
+  guides(color=FALSE)
+
+
+
+DoHeatmap(is018.grouped, features = c('SOX11', 'GPM6A', 'SOX4', 'MLLT11', 'CCNI', 'MARCKSL1', 'DCX', 'FXYD6', 'MAP2', 'TBR1', 'CDH2', 'SLC17A6', 'TRIB2', 'SCB3B', 'BCL11B'), raster=F) + 
+  scale_fill_gradientn(colors = rev(RColorBrewer::brewer.pal(n = 10, name = "RdBu")) ) + 
+  guides(color=FALSE)
+
+VlnPlot(is018.1_2, features=c('SOX11', 'GPM6A', 'SOX4', 'MLLT11', 'CCNI', 'MARCKSL1', 'DCX', 'FXYD6', 'MAP2', 'TBR1', 'CDH2', 'SLC17A6', 'TRIB2', 'SCB3B', 'BCL11B'))
+
+Idents(is018.grouped) <- 'new_clusters'
+TSNEPlot(is018.grouped)
+
+VlnPlot(is018.grouped, features=c('SOX11', 'GPM6A', 'SOX4', 'MLLT11', 'CCNI', 'MARCKSL1', 'DCX', 'FXYD6', 'MAP2', 'TBR1', 'CDH2', 'SLC17A6', 'TRIB2', 'SCB3B', 'BCL11B'))
+
+Idents(is018.grouped)
+genes.test <- unique(c(cortex.genes, 'SOX11', 'GPM6A', 'SOX4', 'MLLT11', 'CCNI', 'MARCKSL1', 'DCX', 'FXYD6', 'MAP2', 'TBR1', 'CDH2', 'SLC17A6', 'TRIB2', 'SCB3B', 'BCL11B'))
+
+is018.cortical.DE <- FindAllMarkers(is018.grouped, features=c(genes.test %in% row.names(as.data.frame(is018.grouped@assays$RNA@data))))
+
+is018.cortical.DE.1_2_vs_rest <- FindMarkers(is018.grouped, features=c(genes.test %in% row.names(as.data.frame(is018.grouped@assays$RNA@data))), ident.1=c('1','2'))
+is018.cortical.DE.1_2_vs_rest.subset <- subset(is018.cortical.DE.1_2_vs_rest, row.names(is018.cortical.DE.1_2_vs_rest) %in% c(genes.test))
+View(is018.cortical.DE.1_2_vs_rest.subset)
+
+
+DoHeatmap(is018.grouped, features = c(row.names(is018.cortical.DE.1_2_vs_rest.subset)), raster=F) + 
+  scale_fill_gradientn(colors = rev(RColorBrewer::brewer.pal(n = 10, name = "RdBu")) ) + 
+  guides(color=FALSE)
+
+
+is018.cortical.DE.1_2_vs_rest.dt <- is018.cortical.DE.1_2_vs_rest
+is018.cortical.DE.1_2_vs_rest.dt$Gene <- row.names(is018.cortical.DE.1_2_vs_rest.dt)
+is018.cortical.DE.1_2_vs_rest.dt<- as.data.table(is018.cortical.DE.1_2_vs_rest.dt )
+is018.cortical.DE.1_2_vs_rest.dt <- is018.cortical.DE.1_2_vs_rest.dt[order(-avg_logFC)]
+
+is018.cortical.DE.1_2_vs_rest.dt.low <- is018.cortical.DE.1_2_vs_rest.dt[order(avg_logFC)]
+
+is018.grouped@meta.data$new_clusters_ref <- factor(is018.grouped@meta.data$new_clusters, levels=c(1,2,3,4,5))
+Idents(is018.grouped) <- 'new_clusters'
+
+DoHeatmap(is018.grouped, features = c(is018.cortical.DE.1_2_vs_rest.dt$Gene[1:50], is018.cortical.DE.1_2_vs_rest.dt.low$Gene[1:50]), raster=F) + 
+  scale_fill_gradientn(colors = rev(RColorBrewer::brewer.pal(n = 10, name = "RdBu")) ) + 
+  guides(color=FALSE)
+fwrite(is018.cortical.DE.1_2_vs_rest.dt, '/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/IS018_clusters1_2_vs_rest_DE.csv')
+
+# 12/16/19: make heatmap with cortical and glial genes----
+library(Seurat)
+library(data.table)
+library(biomaRt)
+library(stringr)
+library(ggplot2)
+load("/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/IS018.grouped.allScaled.Seurat.RData")
+
+is018 <- is018.grouped
+rm(is018.grouped)
+
+is018
+cortex.genes <- intersect(unique(c('RELN', 'RASGRF2', 'RORB', 'PCP4', 'BCL11B', 'FOXP2', 'ABAT', 'CNR1', 'CALB1', 'NECAB1', 'TLE4', 'SLC17A6', 'CHRNA7', 'CUX1', 'CACNG5', 'TRIB2', 'KCNK2', 'CCN2', 'FOXO4', 'NDNF', 'IGSF11', 'CHRNA3', 'CPNE7', 'PCP4', 'CDH2', 'GFAP', 'INPP4B', 'KCNIP2', 'GRIK4', 'ETV1', 'PDE1A', 'CCN1', 'MAP2', 'CXCL14', 'NECTIN3', 'KCNIP1', 'FAM3C', 'RPRM', 'NTNG2', 'TUBB3', 'SYT17', 'PDYN', 'TOX', 'RXFP1', 'SYT10', 'TH', 'WFS1', 'VAT1L', 'GABRA5', 'SYT6', 'TBR1', 'C1QL2', 'TRMT9B', 'KCNA1', 'TH', 'LAMP5', 'HTR2C', 'TMEM163', 'CARTPT', 'AKR1C2', 'CCK', 'AKR1C3', 'FXYD6', 'ANXA1', 'PENK', 'NPY2R', 'CACNA1E', 'OPRK1', 'KCNH4', 'PCDH17', 'SCN3B', 'SEMA3C', 'COL24A1', 'SYNPR', 'CRYM', 'ADRA2A', 'TPBG', 'BEND5', 'NR4A2', 'COL6A1', 'PRSS12', 'SCN4B', 'SYT2', 'LGALS1', 'MFGE8', 'SV2C', 'SNCG')), row.names(is018@assays$RNA@data))
+
+
+glia.genes <- intersect(c('SFRP1', 'C1orf61', 'FABP7', 'SLC1A3', 'SYNE2', 'PAX6', 'HMGN3', 'ID4', 'MYO10', 'DBI', 'PTN', 'QKI', 'LINC01158', 'ZFHX4', 'HES1', 'HMGB2', 'LHX2'), row.names(is018@assays$RNA@data))
+
+cortical.genes <- intersect(c("SOX11","NEUROD2","GPM6A","SOX4","MLLT11","CCNI","SLA","MARCKSL1","DCX","NES"), row.names(is018@assays$RNA@data))
+
+sox2.genes <- c('SOX2')
+
+genelist <- data.table(GeneId =c(sox2.genes,glia.genes, cortical.genes), Category=c(rep('Neuron marker', 1),
+                                                                                    rep('Glia markers',length(glia.genes)),
+                                                                          rep('Cortical markers',length(cortical.genes))))
+
+
+# DoHeatmap(is018, features = c(cortex.genes, glia.genes), raster=F) + 
+#   scale_fill_gradientn(colors = rev(RColorBrewer::brewer.pal(n = 10, name = "RdBu")) ) + 
+#   guides(color=FALSE)
+# 
+# 
+# 
+# DoHeatmap(is018, features = c(glia.genes), raster=F) + 
+#   scale_fill_gradientn(colors = rev(RColorBrewer::brewer.pal(n = 10, name = "RdBu")) ) + 
+#   guides(color=FALSE)
+# 
+# is018@meta.data$new_clusters <- factor(is018@meta.data$new_clusters, levels=c(1,2,3,4,5))
+# 
+# 
+# 
+# DotPlot(is018, features=c(glia.genes), scale.max=100) + theme(axis.text.x=element_text(angle=90, hjust=0))
+# 
+
+# avg.expr <- AverageExpression(is018, features=c(glia.genes, cortical.genes))
+# avg.expr <- as.data.frame(avg.expr$RNA)
+# avg.expr$GeneId <- row.names(avg.expr)
+# avg.expr <- as.data.table(avg.expr)
+# avg.expr 
+# 
+# avg.expr <- melt(avg.expr, id.vars = 'GeneId')
+# names(avg.expr)[2] <- 'Cluster'
+# avg.expr <- as.data.table(avg.expr)
+# avg.expr
+# names(avg.expr)[3] <- 'Expression'
+
+exp <- FetchData(is018, c(genelist$GeneId))
+exp$barcode <- row.names(exp)
+exp <- as.data.table(exp)
+all(exp$barcode == is018@meta.data$new_clusters)
+
+meta.mini <- is018@meta.data
+meta.mini <- subset(meta.mini, select=c('new_clusters'))
+meta.mini$barcode <- row.names(meta.mini)
+meta.mini <- as.data.table(meta.mini)
+meta.mini
+
+exp <- merge(exp, meta.mini, by='barcode')
+exp
+
+exp.melt <- melt(exp, id.vars=c('barcode','new_clusters'))
+
+exp.melt <- exp.melt[order(new_clusters)]
+perc.expr <- exp.melt %>% group_by(new_clusters, variable) %>% summarize(n_cells = n(),
+                                                  n_expressed = sum(value > 0),
+                                                  p_expressed = n_expressed / n_cells)
+
+perc.expr
+
+exp.final <- merge(exp.melt, perc.expr, by=c('new_clusters','variable'))
+exp.final
+
+range(exp.final$p_expressed)
+
+exp.final[,new_clusters := factor(new_clusters, levels=c(5,4,3,2,1))]
+exp.final <- merge(exp.final, genelist, by.x='variable', by.y='GeneId')
+# fancy dot plot 01/13/20-----
+
+ggplot(exp.final, aes(x=variable, y=new_clusters, size=p_expressed)) + geom_point(aes(color=value))+
+  theme_bw()+theme(panel.grid = element_blank())+
+  labs(size='Percent expressed', fill='Average expression', color='Average expression',x='Gene', y='Cluster')+
+  scale_color_viridis_c(option = 'A', direction = -1, begin=0.1, end= 0.8)+
+  scale_size_continuous(range = c(5,15))+
+  facet_wrap(~Category, shrink = T,scales = "free_x",switch = 'x')+
+  theme(axis.text=element_text(size=15), axis.text.x = element_text(angle=90, vjust=0.1), axis.title = element_text(size=15), title=element_text(size=16),strip.text.x = element_text(size=15))
+
+# rerunning later 04/16/20------
+cortical.genelist <- c('CCNI', 'DCX', 'GPM6A', 'MARCKSL1', 'MLLT11', 'NES', 'NEUROD2', 'SLA', 'SOX11', 'SOX4')
+glia.genelist <- c('C1orf61', 'DBI', 'FABP7', 'HES1', 'HMGN3', 'ID4', 'LHX2', 'MYO10', 'PAX6', 'PTN', 'QKI', 'SFRP1', 'SLC1A3', 'SYNE2', 'ZFHX4')
+
+is018 <- is018.grouped
+exp <- FetchData(is018, c(cortical.genelist, glia.genelist))
+exp$barcode <- row.names(exp)
+exp <- as.data.table(exp)
+all(exp$barcode == row.names(is018@meta.data))
+
+meta.mini <- is018@meta.data
+meta.mini <- subset(meta.mini, select=c('new_clusters'))
+meta.mini$barcode <- row.names(meta.mini)
+meta.mini <- as.data.table(meta.mini)
+meta.mini
+
+exp <- merge(exp, meta.mini, by='barcode')
+exp
+
+exp.melt <- melt(exp, id.vars=c('barcode','new_clusters'))
+
+exp.melt <- exp.melt[order(new_clusters)]
+perc.expr <- exp.melt %>% group_by(new_clusters, variable) %>% summarize(n_cells = n(),
+                                                                         n_expressed = sum(value > 0),
+                                                                         p_expressed = n_expressed / n_cells)
+
+perc.expr
+
+exp.final <- merge(exp.melt, perc.expr, by=c('new_clusters','variable'))
+exp.final
+
+range(exp.final$p_expressed)
+
+exp.final[,new_clusters := factor(new_clusters, levels=c(5,4,3,2,1))]
+
+genelist <- data.table(GeneId = c(cortical.genelist, glia.genelist), 
+                       Category=c(rep('Cortical', length(cortical.genelist)),
+                                  rep('Glia', length(glia.genelist))))
+
+exp.final <- merge(exp.final, genelist, by.x='variable', by.y='GeneId')
+exp.final
+fwrite(exp.final, '/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/IS018_dotplot_expfinal.csv')
+
+
+ggplot(exp.final, aes(x=variable, y=new_clusters, size=p_expressed)) + geom_point(aes(color=value))+
+  theme_bw()+theme(panel.grid = element_blank())+
+  labs(size='Percent expressed', fill='Average expression', color='Average expression',x='Gene', y='Cluster')+
+  scale_color_viridis_c(option = 'A', direction = -1, begin=0.1, end= 0.8)+
+  scale_size_continuous(range = c(5,15))+
+  facet_wrap(~Category, shrink = T,scales = "free_x",switch = 'x')+
+  theme(axis.text=element_text(size=15), axis.text.x = element_text(angle=90, vjust=0.1), axis.title = element_text(size=15), title=element_text(size=16),strip.text.x = element_text(size=15))
+
+
+
+# 04/17/20 tsne resizing -----
+TSNEPlot(is018.grouped, pt.size=1, label=TRUE,
+         label.size = 10) + scale_color_manual(values=c('1'='#F8766D', '2'='#A3A500',
+                                        '3'='#00BF7D','4'='#00B0F6','5'='#E76BF3'))+
+  theme(axis.text = element_text(size=18), axis.title = element_text(size=20))+
+  guides(color=FALSE)
 
 # rerunning dotplot again, april 23, 2020-----
 
@@ -869,13 +1167,13 @@ range(exp.final$p_expressed)
 exp.final[,new_clusters := factor(new_clusters, levels=c(5,4,3,2,1))]
 
 genelist <- data.table(GeneId = c(tele, vent, npc, pons, medu), 
-                       Category=c(rep('Telencephalic or dorsal forebrain neuron',
-                                      length(tele)),
-                                  rep('Ventral forebrain neuron', length(vent)),
-                                  rep('Neural progenitors', length(npc)),
-                                  rep('Pons', length(pons)),
-                                  rep('Medulla', length(medu))
-                       ))
+Category=c(rep('Telencephalic or dorsal forebrain neuron',
+               length(tele)),
+    rep('Ventral forebrain neuron', length(vent)),
+    rep('Neural progenitors', length(npc)),
+    rep('Pons', length(pons)),
+    rep('Medulla', length(medu))
+    ))
 
 exp.final <- merge(exp.final, genelist, by.x='variable', by.y='GeneId')
 exp.final
@@ -891,27 +1189,65 @@ ggplot(exp.final, aes(x=variable, y=new_clusters, size=p_expressed)) +
   scale_size_continuous(range = c(5,10))+
   facet_wrap(~Category, shrink = T,scales = "free_x",switch = 'x')+
   theme(axis.text=element_text(size=15), axis.text.x = element_text(angle=90,
-                                                                    vjust=0.1), axis.title = element_text(size=15),
+        vjust=0.1), axis.title = element_text(size=15),
         title=element_text(size=16),strip.text.x = element_text(size=15))
 
-# is018.grouped@meta.data
-# is018.grouped@meta.data$new_clusters_reorder_rev <- factor(is018.grouped@meta.data$new_clusters, levels=c(1,2,3,4,5))
-# is018.grouped@meta.data$new_clusters_reorder_rev <- is018.grouped@meta.data$new_clusters_reorder
-# is018.grouped@meta.data$new_clusters_reorder_rev <- gsub(5, 'five', is018.grouped@meta.data$new_clusters_reorder_rev)
-# is018.grouped@meta.data$new_clusters_reorder_rev <- gsub(4, 'four', is018.grouped@meta.data$new_clusters_reorder_rev)
-# is018.grouped@meta.data$new_clusters_reorder_rev <- gsub(3, 'three', is018.grouped@meta.data$new_clusters_reorder_rev)
-# is018.grouped@meta.data$new_clusters_reorder_rev <- gsub(2, 'two', is018.grouped@meta.data$new_clusters_reorder_rev)
-# is018.grouped@meta.data$new_clusters_reorder_rev <- gsub(1, 'one', is018.grouped@meta.data$new_clusters_reorder_rev)
-# 
-# Idents(is018.grouped) <- 'new_clusters_reorder_rev'
+is018.grouped@meta.data
+is018.grouped@meta.data$new_clusters_reorder_rev <- factor(is018.grouped@meta.data$new_clusters, levels=c(1,2,3,4,5))
+is018.grouped@meta.data$new_clusters_reorder_rev <- is018.grouped@meta.data$new_clusters_reorder
+is018.grouped@meta.data$new_clusters_reorder_rev <- gsub(5, 'five', is018.grouped@meta.data$new_clusters_reorder_rev)
+is018.grouped@meta.data$new_clusters_reorder_rev <- gsub(4, 'four', is018.grouped@meta.data$new_clusters_reorder_rev)
+is018.grouped@meta.data$new_clusters_reorder_rev <- gsub(3, 'three', is018.grouped@meta.data$new_clusters_reorder_rev)
+is018.grouped@meta.data$new_clusters_reorder_rev <- gsub(2, 'two', is018.grouped@meta.data$new_clusters_reorder_rev)
+is018.grouped@meta.data$new_clusters_reorder_rev <- gsub(1, 'one', is018.grouped@meta.data$new_clusters_reorder_rev)
 
-# is018.grouped@meta.data$new_clusters_reorder_rev <- factor(is018.grouped@meta.data$new_clusters_reorder_rev , levels=c('five','four','three','two','one'))
+Idents(is018.grouped) <- 'new_clusters_reorder_rev'
 
+is018.grouped@meta.data$new_clusters_reorder_rev <- factor(is018.grouped@meta.data$new_clusters_reorder_rev , levels=c('five','four','three','two','one'))
 
-Idents(is018.grouped) <- 'new_clusters'
-is018.grouped@meta.data$new_clusters_reorder <- factor(is018.grouped@meta.data$new_clusters, levels=c(1,2,3,4,5))
-Idents(is018.grouped) <- 'new_clusters_reorder'
+DotPlot(is018.grouped, features=c(tele, vent, npc, pons, medu))+theme(axis.text.x = element_text(angle=90))
 
 
-DotPlot(is018.grouped, features=rev(c(tele, vent, npc, pons, medu)) )+theme(axis.text.x = element_text(angle=90))
+# glutamate receptors plot may 4, 2020-----
+load("/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/IS018.grouped.allScaled.Seurat.RData")
+
+library(Seurat)
+
+Idents(is018.grouped)
+
+genelist <- as.data.table(readxl::read_xlsx('/Volumes/ncatssctl/NGS_related/Chromium/IS018/Analysis/Neuroreceptors.xlsx'))
+genelist
+
+DotPlot(is018.grouped, features=c(genelist$GeneId))+theme(axis.text.x = element_text(angle=90))
+
+DoHeatmap(is018.grouped, features = c(genelist$GeneId), raster=F) + 
+  scale_fill_gradientn(colors = rev(RColorBrewer::brewer.pal(n = 10, name = "RdBu")) ) + 
+  guides(color=FALSE)
+
+Idents(is018.grouped)
+
+is018.grouped@meta.data$new_clusters
+is018.grouped@active.ident
+
+is018.grouped@meta.data$new_clusters_reordered <- factor(is018.grouped@meta.data$new_clusters, levels=c(1,2,3,4,5))
+Idents(is018.grouped) <- 'new_clusters_reordered'
+
+DotPlot(is018.grouped, features=c(genelist$GeneId))+theme(axis.text.x = element_text(angle=90))
+
+
+avgs <- AverageExpression(is018.grouped, features=c(genelist$GeneId[genelist$GeneId %in% row.names(is018.grouped@assays$RNA@counts)] ))$RNA
+avgs$rowSum <- rowSums(avgs)
+avgs <- subset(avgs, rowSum >0.5)
+avgs$GeneId <- row.names(avgs)
+avgs <- as.data.table(avgs)
+#avgs <- avgs[order(-rowSum)]
+avgs <- merge(avgs, genelist, by='GeneId', all.x=T, all.y=F)
+avgs
+
+DotPlot(is018.grouped, features=c(rev(avgs$GeneId) ))+
+  theme(axis.text.y = element_text(angle=0), axis.text.x=
+          element_text(angle=90))
+
+
+
 
