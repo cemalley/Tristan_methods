@@ -43,91 +43,7 @@ for (file in files){
   fwrite(dt, paste0("/Volumes/ncatssctl/NGS_related/Chromium/IS011/Countfiles_gene_symbol/", sample_id, "_gene_symbol.csv"), col.names = T, row.names = F, quote=F, sep=",")
 }
 
-
-reformat_for_seurat <- function(x, samplename){
-  x <- x[!duplicated(external_gene_name),]
-  x <- x[external_gene_name != "NA",]
-  x <- subset(x, select=c("external_gene_name", unlist(names(x))[2:(length(x)-1)] ))
-  x <- as.data.frame(x)
-  row.names(x) <- x$external_gene_name
-  x <- x[-1]
-  barcodes <- names(x)[2:length(x)]
-  barcodes <- paste0(barcodes, paste0(".", samplename))
-  names(x)[2:length(x)] <- barcodes
-  x <- CreateSeuratObject(raw.data = x, project = "IS011")
-  x@meta.data$sample <- samplename
-  #x <- NormalizeData(x)
-  #x <- ScaleData(x, display.progress = F)
-  return(x)
-}
-
-
-IS011_2D_endo <- reformat_for_seurat(fread(files[1]), "2D_endo")
-IS011_iRPE <- reformat_for_seurat(fread(files[2]), "iRPE")
-IS011_3D_endo<- reformat_for_seurat(fread(files[3]), "3D_endo")
-IS011_Lonza_NSC_auto_2D<- reformat_for_seurat(fread(files[5]), "Lonza_NSC_auto_2D")
-
-
-# merging IS011 and IS013, only partial samples merge-----
-
-is011.13 <- MergeSeurat(IS011_2D_endo, IS011_iRPE, project = "IS011.13", do.normalize = F)
-is011.13 <- MergeSeurat(is011.13, IS011_3D_endo, project="IS011.13", do.normalize = F)
-is011.13 <- MergeSeurat(is011.13, IS013_2D_RPE, project='IS011.13', do.normalize=F)
-is011.13 <- MergeSeurat(is011.13, IS013_tissue_RPE, project="IS011.13", do.normalize = F)
-
-
-is011.13 <- NormalizeData(is011.13, normalization.method = "LogNormalize", scale.factor = 10000)
-is011.13 <- ScaleData(is011.13)
-is011.13 <- FindVariableGenes(object = is011.13, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5)
-is011.13 <- SetAllIdent(is011.13, id="sample")
-is011.13 <- RunPCA(object = is011.13, pcs.print = 1:5, genes.print = 5)
-#PCAPlot(is011.13)
-
-is011.13 <- RunTSNE(object = is011.13, dims.use = 1:8, do.fast = TRUE)
-#tsneplotdata <- TSNEPlot(object = is011.13)
-
-pdfPath <- '/Volumes/ncatssctl/NGS_related/Chromium/IS011/'
-pdf(file=paste0(pdfPath, "/IS011.13.PCA.pdf"), width=10, height=10)
-print(PCAPlot(is011.13))
-dev.off()
-pdf(file=paste0(pdfPath, "/IS011.13.TSNE.pdf"), width=10, height=10)
-print(TSNEPlot(is011.13))
-dev.off()
-setwd(pdfPath)
-save(is011.13, file="IS011.13.partialmerge.Seurat.RData")
-
-# top genes for each group ----
-
-IS011_2D_endo_markers <- FindMarkers(object = is011.13, ident.1 = "2D_endo", min.pct = 0.25)
-IS011_iRPE_markers <- FindMarkers(object = is011.13, ident.1 = "iRPE", min.pct = 0.25)
-IS011_3D_endo_markers <- FindMarkers(object = is011.13, ident.1 = "3D_endo", min.pct = 0.25)
-IS013_2D_RPE <- FindMarkers(object = is011.13, ident.1 = "2D_RPE", min.pct = 0.25)
-IS013_tissue_RPE <- FindMarkers(object = is011.13, ident.1 = "Tissue_RPE", min.pct = 0.25)
-
-markers <- c(row.names(IS011_2D_endo_markers)[1:10], row.names(IS011_iRPE_markers )[1:10], row.names(IS011_3D_endo_markers)[1:10], row.names(IS013_2D_RPE)[1:10], row.names(IS013_tissue_RPE )[1:10])
-#markers <- unique(markers)
-
-
-fwrite(IS011_2D_endo_markers, 'IS011_2D_endo_markers.csv', sep=',', col.names = T, row.names = T, quote=F)
-fwrite(IS011_iRPE_markers, 'IS011_iRPE_markers.csv', sep=',', col.names = T, row.names = T, quote=F)
-fwrite(IS011_3D_endo_markers, 'IS011_3D_endo_markers.csv', sep=',', col.names = T, row.names = T, quote=F)
-fwrite(IS013_2D_RPE, 'IS013_2D_RPE.csv', sep=',', col.names = T, row.names = T, quote=F)
-fwrite(IS013_tissue_RPE, 'IS013_tissue_RPE.csv', sep=',', col.names = T, row.names = T, quote=F)
-
-# heatmap----
-
-pdf(file=paste0(pdfPath, "/IS011.13.heatmap.pdf"), width=11, height=10)
-print(DoHeatmap(is011.13, genes.use=c(markers), col.low = "green", col.high="red", remove.key = F, slim.col.label = TRUE, group.order = c('2D_endo', 'iRPE', '3D_endo', '2D_RPE', 'Tissue_RPE'), group.label.rot = T))
-dev.off()
-
 #
-
-
-#
-cluster.averages.IS011.ecto <- AverageExpression(object = IS011_Lonza_NSC_auto_2D)
-
-# try to merge this sample with older trilineage samples
-
 
 ipsc.meso <- fread("/Volumes/ncatssctl/NGS_related/Chromium/IS006/expression_matrices/gene_symbol_matrices/iPSC_Lonza_Meso_dense_expression_matrix.csv")
 ipsc.endo <- fread("/Volumes/ncatssctl/NGS_related/Chromium/IS006/expression_matrices/gene_symbol_matrices/iPSC_Lonza_Endo_dense_expression_matrix.csv")
@@ -166,8 +82,48 @@ PCAPlot(object=is006.h9)
 is006.h9 <- RunTSNE(is006.h9)
 TSNEPlot(object = is006.h9)
 
+# /data/NCATS_ifx/iPSC/IS006/IS006.H9.Seurat.Rdata
+# /data/NCATS_ifx/iPSC/IS011/IS006.11.Seurat.RData
+# merge.
 
+x <- is006.11.ipsc.h9
 
+#x <- NormalizeData(x)
+x <- FindVariableFeatures(x)
+x <- ScaleData(x)
+x <- RunPCA(x)
+x <- FindNeighbors(x)
+x <- FindClusters(x)
+x <- RunTSNE(x)
 
+x@meta.data$sample_rename <- x@meta.data$sample
+x@meta.data$sample_rename <- gsub('ipsc.ES', 'iPSC Pluripotent', x@meta.data$sample_rename)
+x@meta.data$sample_rename <- gsub('ipsc.endo', 'iPSC Endoderm', x@meta.data$sample_rename)
+x@meta.data$sample_rename <- gsub('ipsc.meso', 'iPSC Mesoderm', x@meta.data$sample_rename)
+x@meta.data$sample_rename <- gsub('ipsc.ecto', 'iPSC Ectoderm', x@meta.data$sample_rename)
+x@meta.data$sample_rename <- gsub('h9.ecto', 'ESC Ectoderm', x@meta.data$sample_rename)
+x@meta.data$sample_rename <- gsub('h9.endo', 'ESC Endoderm', x@meta.data$sample_rename)
+x@meta.data$sample_rename <- gsub('h9.meso', 'ESC Mesoderm', x@meta.data$sample_rename)
+x@meta.data$sample_rename <- gsub('h9.es', 'ESC Pluripotent', x@meta.data$sample_rename)
+x@meta.data$sample_rename <- factor(x@meta.data$sample_rename, levels=
+              c('ESC Pluripotent','iPSC Pluripotent',
+                'ESC Ectoderm', 'iPSC Ectoderm',
+                'ESC Endoderm','iPSC Endoderm',
+                'ESC Mesoderm','iPSC Mesoderm'))
+Idents(x) <- 'sample_rename'
 
+tsne.plot <- TSNEPlot(x, pt.size=1)
+pdf("IS006-11.iPSC.H9.tSNE.pdf", height = 4.8, width= 7.6)
+plot(tsne.plot)
+dev.off()
+
+pca.plot <- PCAPlot(x, pt.size=1)
+pdf("IS006-11.iPSC.H9.PCA.pdf", height = 4.8, width= 7.6)
+plot(pca.plot)
+dev.off()
+
+pca.plot2 <- PCAPlot(x,dims=2:3, pt.size=1)
+pdf("IS006-11.iPSC.H9.PCA_dims2-3.pdf", height = 4.8, width= 7.6)
+plot(pca.plot2)
+dev.off()
 
