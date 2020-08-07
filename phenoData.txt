@@ -1,0 +1,5 @@
+file_name	sample_id	line	culture	patient_id
+20190618_H9_auto_01_normalized.fcs	H9.auto	H9	auto	Patient1
+20190618_H9_manual_01_normalized.fcs	H9.manual	H9	manual	Patient2
+20190618_Lonza_auto_01_normalized.fcs	Lonza.auto	Lonza	auto	Patient3
+20190618_Lonza_manual_01_normalized.fcs	Lonza.manual	Lonza	manual	Patient4
