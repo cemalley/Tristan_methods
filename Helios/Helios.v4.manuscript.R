@@ -3,7 +3,7 @@
 # Script authors: Jaroslav Slamecka, Claire Malley
 # Related to manuscript:
 # Title: Robotic Cell Culture Enables Standardized Cell Expansion and Multi-Lineage Functional Differentiation of Human Pluripotent Stem Cells
-# Authors: Carlos A. Tristan, Pinar Ormanoglu, Pei-Hsuan Chu, Claire Malley, Jaroslav Slamecka, Vukasin M. Jovanovic, Yeliz Gedik, John Braisted, Sunil K. Mallanna1, Yu Chen2, Dorjbal Dorjsuren, Michael Iannotti, Sam Michael, Anton Simeonov, Ilyas Singeç
+# Authors: Carlos A. Tristan, Pinar Ormanoglu, Pei-Hsuan Chu, Claire Malley, Jaroslav Slamecka, Vukasin M. Jovanovic, Yeliz Gedik, John Braisted, Sunil K. Mallanna1, Yu Chen2, Dorjbal Dorjsuren, Michael Iannotti, Sam Michael, Anton Simeonov, Ilyas SingeÃ§
 # National Center for Advancing Translational Sciences (NCATS), Division of Preclinical Innovation, Stem Cell Translation Laboratory (SCTL), National Institutes of Health (NIH), Rockville, MD 20850, USA
 # Correspondence: ilyas.singec@nih.gov
 
